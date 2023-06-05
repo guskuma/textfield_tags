@@ -59,18 +59,18 @@ class _TextFieldTagsState extends State<TextFieldTags> {
         widget.initialTags,
         widget.textEditingController,
         widget.focusNode,
-        widget.textSeparators,
+        widget.textSeparators
       )
       ..scrollTags(forward: true);
 
     _error = _ttc.getError;
-    _tags = _ttc.getTags;
+    _tags = _ttc.tags;
 
     _ttc.addListener(() {
       if (mounted) {
         setState(() {
           _error = _ttc.getError;
-          _tags = _ttc.getTags;
+          _tags = _ttc.tags;
         });
       }
     });

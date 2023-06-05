@@ -74,7 +74,7 @@ class _HomeState extends State<Home> {
               validator: (String tag) {
                 if (tag == 'php') {
                   return 'No, please just no';
-                } else if (_controller.getTags.contains(tag)) {
+                } else if (_controller.tags.contains(tag)) {
                   return 'you already entered that';
                 }
                 return null;

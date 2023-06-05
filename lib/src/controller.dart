@@ -26,10 +26,14 @@ abstract class TextfieldTagsNotifier extends ChangeNotifier {
   late TextEditingController? textEditingController;
   late FocusNode? focusNode;
 
+  Function(String tag)? onTagAdded;
+  Function(String tag)? onTagRemoved;
+  Function(List<String>? tags)? onTagsChanged;
+
   late Set<String>? _textSeparators;
   late List<String>? _tags;
 
-  List<String>? get getTags => _tags?.toList();
+  List<String>? get tags => _tags;
 
   void initS(
     List<String>? initialTags,
@@ -45,10 +49,16 @@ abstract class TextfieldTagsNotifier extends ChangeNotifier {
 
   set addTag(String tag) {
     _tags!.add(tag);
+    // debugPrint('Tag added: $tag');
+    onTagAdded?.call(tag);
+    onTagsChanged?.call(_tags);
   }
 
   set removeTag(String tag) {
     _tags!.remove(tag);
+    // debugPrint('Tag removed: $tag');
+    onTagRemoved?.call(tag);
+    onTagsChanged?.call(_tags);
   }
 
   onChanged(String value);
@@ -124,35 +134,51 @@ class TextfieldTagsController extends TextfieldTagsNotifier {
     }
   }
 
-  @override
-  void onChanged(String value) {
-    final ts = _textSeparators!;
-    final lc = _letterCase!;
-    final separator = ts.cast<String?>().firstWhere(
-        (element) => value.contains(element!) && value.indexOf(element) != 0,
-        orElse: () => null);
-    if (separator != null) {
-      final splits = value.split(separator);
-      final indexer = splits.length > 1 ? splits.length - 2 : splits.length - 1;
-      final val = lc == LetterCase.small
-          ? splits.elementAt(indexer).trim().toLowerCase()
-          : lc == LetterCase.capital
-              ? splits.elementAt(indexer).trim().toUpperCase()
-              : splits.elementAt(indexer).trim();
-      _onTagOperation(val);
+  String? findSeparator(String value, Set<String> textSeparators) {
+    return textSeparators.cast<String?>().firstWhere(
+          (element) => value.contains(element!) && value.indexOf(element) != 0,
+      orElse: () => null,
+    );
+  }
+
+  String processText(String text, LetterCase letterCase) {
+    final trimmedText = text.trim();
+    if (letterCase == LetterCase.small) {
+      return trimmedText.toLowerCase();
+    } else if (letterCase == LetterCase.capital) {
+      return trimmedText.toUpperCase();
     }
+    return trimmedText;
   }
 
   @override
-  void onSubmitted(String value) {
-    final lc = _letterCase!;
-    final val = lc == LetterCase.small
-        ? value.trim().toLowerCase()
-        : lc == LetterCase.capital
-            ? value.trim().toUpperCase()
-            : value.trim();
-    _onTagOperation(val);
+  void onChanged(String value) {
+    final separator = findSeparator(value, _textSeparators!);
+    if (separator != null) {
+      final splits = value.split(separator);
+      final lastIndex = splits.length > 1 ? splits.length - 2 : splits.length - 1;
+      final processedText = processText(splits.elementAt(lastIndex), _letterCase!);
+      _onTagOperation(processedText);
+    }
   }
+
+
+  @override
+  void onSubmitted(String value) {
+    String convertLetterCase(String input, LetterCase? letterCase) {
+      if (letterCase == LetterCase.small) {
+        return input.toLowerCase();
+      } else if (letterCase == LetterCase.capital) {
+        return input.toUpperCase();
+      }
+      return input;
+    }
+
+    final trimmedValue = value.trim();
+    final convertedValue = convertLetterCase(trimmedValue, _letterCase);
+    _onTagOperation(convertedValue);
+  }
+
 
   @override
   set addTag(String value) {
